@@ -153,7 +153,7 @@ gcloud storage cp gs://mainnet-beta-ledger-europe-fr2/genesis.tar.bz2 .
     ```
 
 ## 6. Download and untar the ledger archive `rocksdb.tar.zst` from the bucket
-This can take a while, so use a screen session for this command:
+This can take a while, so use a screen session for this command (don't forget to use your bucket number in the link below):
 ```bash
 cd /mnt/ledger
 gcloud storage cp gs://mainnet-beta-ledger-europe-fr2/300194044/rocksdb.tar.zst .
