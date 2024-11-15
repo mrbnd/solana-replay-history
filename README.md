@@ -100,6 +100,93 @@ Codename:	jammy
 
 </details>
 
+
+# Short version
+
+## 1. Install [gcloud cli](https://cloud.google.com/sdk/docs/install#deb) and login to your Google account
+```bash
+gcloud auth login
+```
+## 2. Find out slot number you want to restore(If you know it skip this step)
+1. If you know the transaction signature use [solscan](https://solscan.io/)
+2. In case you only test this instruction you can use `find_transaction_contains.py` to find slot which contains line `"Log truncated"`
+    a. Download `find_transaction_contains.py` and update the `start_slot` and `end_slot` variables in the script.
+    b. Run it:
+      ```bash
+        cd path_to_folder_with_find_transaction_contains.py
+        python -m venv venv
+        pip install solana tqdm
+        python find_transaction_contains.py
+      ```
+      Sometimes you'll see messages like this:
+      ```
+      Error with block: some_block_number: 
+      Sleep 13 seconds
+      ```
+      Usually, this happens because the public Solana node can't handle more requests per second (RPS). If every slot returns this message, stop the script and start it again after a couple of minutes.
+
+## 3. Download the [genesis.tar.bz2](https://console.cloud.google.com/storage/browser/_details/mainnet-beta-ledger-europe-fr2/genesis.tar.bz2) archive for Solana Mainnet cluster
+
+```bash
+cd /mnt/ledger
+gcloud storage cp gs://mainnet-beta-ledger-europe-fr2/genesis.tar.bz2 .
+```
+
+## 4. Find the bucket with the highest slot less than the tx slot in Google Cloud Storage
+1. Choose endpoints (see `Google Cloud Storage endpoints` in the Verbose version below)
+2. Go to [google storage](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2)
+3. In the `Filter` field, start typing the slot number (digit by digit). Сhoose the bucket with a highest number less than your slot number. E.g. In the Google Cloud Storage, the bucket with the highest slot less than 300515063 is [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044)
+4. Download bounds.txt from [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044) it should contain line like this
+    ```
+    Ledger has data for 421806 slots 300239305 to 300672083
+    ```
+    This is ok in our case, because the tx slot 300515063 is in the range of ledger data (`300239305 < 300515063 < 300672083`).
+
+    In the next steps we will work with this bucket
+
+## 5. Download the snapshot for the highest slot less than the tx slot from Google Cloud Storage
+1. In the bucket [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044) open `hourly` folder and find the snapshot with highest slot less than 300515063, which is 300512975 in our case.
+2. Download it
+    ```bash
+    cd /mnt/ledger
+    gcloud storage cp gs://mainnet-beta-ledger-europe-fr2/300194044/hourly/snapshot-300512975-GwHSbt6nAobEmL4zsQTx9KZzz9yLnugZnxt5dUYYx7vD.tar.zst .
+    ```
+
+## 6. Download and untar the ledger archive `rocksdb.tar.zst` from the bucket
+This can take a while, so use a screen session for this command:
+```bash
+cd /mnt/ledger
+gcloud storage cp gs://mainnet-beta-ledger-europe-fr2/300194044/rocksdb.tar.zst .
+tar --use-compress-program=unzstd -xvf rocksdb.tar.zst
+```
+
+## 7. Download agave-ledger-tool
+See `Compile agave-ledger-tool with support for --log-messages-bytes-limit and --enable-extended-tx-metadata-storage arguments` in the Verbose version below
+
+## 8. Recover truncated logs
+1. Check slot contains `Log truncated`
+    ```bash
+    cd /mnt
+    agave-ledger-tool slot 300515063 -vv | grep "Log truncated"
+    ```
+2. Recover (`--halt-at-slot` = desired slot + 1)
+    ```bash
+    cd /mnt
+    RUST_LOG=info,solana_metrics=off agave-ledger-tool verify \
+    --skip-verification \
+    --halt-at-slot 300515064 \
+    --log-messages-bytes-limit 1000000000 \
+    --enable-rpc-transaction-history \
+    --enable-extended-tx-metadata-storage
+    ```
+3. Check slot does NOT contains `Log truncated` anymore
+    ```bash
+    cd /mnt
+    agave-ledger-tool slot 300515063 -vv | grep "Log truncated"
+    ```
+
+# Verbose version
+
 ## 1. Download the [genesis.tar.bz2](https://console.cloud.google.com/storage/browser/_details/mainnet-beta-ledger-europe-fr2/genesis.tar.bz2) (34 KB) archive for Solana Mainnet cluster
 
 <details>
@@ -381,11 +468,34 @@ sys     34m6.154s
 
 ## 6. Compile `agave-ledger-tool` with support for `--log-messages-bytes-limit` and `--enable-extended-tx-metadata-storage` arguments
 
+The required ledger version can be found in the same  [257034560](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/257034560) bucket, check [version.txt](https://console.cloud.google.com/storage/browser/_details/mainnet-beta-ledger-europe-fr2/257034560/version.txt)
+
 `agave-ledger-tool` now supports both `--log-messages-bytes-limit` and `--enable-extended-tx-metadata-storage` arguments
 since https://github.com/anza-xyz/agave/pull/854 and https://github.com/anza-xyz/agave/pull/1344 have been merged.
 
-For previous Solana versions, like [v1.17](https://github.com/anza-xyz/agave/tree/v1.17), these changes need to be
-cherry-picked. I created a
+For previous Solana versions, like [v1.17](https://github.com/anza-xyz/agave/tree/v1.17) or [v1.18.26](https://github.com/anza-xyz/agave/tree/v1.18.26), these changes need to be cherry-picked.
+
+
+For [v1.18.26](https://github.com/anza-xyz/agave/tree/v1.18.26) use the following instruction:
+branch [ledger-tool-log-messages-bytes-limit-v1.18.26](https://github.com/mrbnd/agave/tree/ledger-tool-log-messages-bytes-limit-v1.18.26)
+from [v1.18.26](https://github.com/anza-xyz/agave/tree/v1.18.26) with support for both arguments above.
+
+```bash
+git clone https://github.com/mrbnd/agave
+cd agave/ledger-tool
+git checkout ledger-tool-log-messages-bytes-limit-v1.18.26
+cargo build --release
+../target/release/agave-ledger-tool --version
+```
+
+Running the commands above should give an output something similar to:
+
+```bash
+agave-ledger-tool 1.18.26 (src:00000000; feat:3241752014, client:Agave)
+```
+
+
+For [v1.17](https://github.com/anza-xyz/agave/tree/v1.17) use the following instruction:
 branch [ledger-tool-log-messages-bytes-limit-v1.17](https://github.com/andreisilviudragnea/solana/tree/ledger-tool-log-messages-bytes-limit-v1.17)
 from [v1.17](https://github.com/anza-xyz/agave/tree/v1.17) with support for both arguments above.
 
