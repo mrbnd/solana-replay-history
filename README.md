@@ -135,17 +135,17 @@ gcloud storage cp gs://mainnet-beta-ledger-europe-fr2/genesis.tar.bz2 .
 ## 4. Find the bucket with the highest slot less than the tx slot in Google Cloud Storage
 1. Choose endpoints (see `Google Cloud Storage endpoints` in the Verbose version below)
 2. Go to [google storage](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2) (Europe endpoint in my case)
-3. In the `Filter` field, start typing the slot number (digit by digit). Сhoose the bucket with a highest number less than your slot number. E.g. In the Google Cloud Storage, the bucket with the highest slot less than 300515063 is [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044)
+3. In the `Filter` field, start typing the slot number (digit by digit). Сhoose the bucket with a highest number less than your slot number. E.g. In the Google Cloud Storage, the bucket with the highest slot less than `300515063` is [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044)
 4. Download bounds.txt from [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044) it should contain line like this
     ```
     Ledger has data for 421806 slots 300239305 to 300672083
     ```
-    This is ok in our case, because the tx slot 300515063 is in the range of ledger data (`300239305 < 300515063 < 300672083`).
+    This is ok in our case, because the tx slot `300515063` is in the range of ledger data (`300239305 < 300515063 < 300672083`).
 
     In the next steps we will work with this bucket
 
 ## 5. Download the snapshot for the highest slot less than the tx slot from Google Cloud Storage
-1. In the bucket [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044) open `hourly` folder and find the snapshot with highest slot less than 300515063, which is 300512975 in our case.
+1. In the bucket [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044) open `hourly` folder and find the snapshot with highest slot less than `300515063`, which is `300512975` in our case.
 2. Download it
     ```bash
     cd /mnt/ledger
