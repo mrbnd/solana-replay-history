@@ -134,7 +134,7 @@ gcloud storage cp gs://mainnet-beta-ledger-europe-fr2/genesis.tar.bz2 .
 
 ## 4. Find the bucket with the highest slot less than the tx slot in Google Cloud Storage
 1. Choose endpoints (see `Google Cloud Storage endpoints` in the Verbose version below)
-2. Go to [google storage](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2) (Europe in my case)
+2. Go to [google storage](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2) (Europe endpoint in my case)
 3. In the `Filter` field, start typing the slot number (digit by digit). Сhoose the bucket with a highest number less than your slot number. E.g. In the Google Cloud Storage, the bucket with the highest slot less than 300515063 is [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044)
 4. Download bounds.txt from [300194044](https://console.cloud.google.com/storage/browser/mainnet-beta-ledger-europe-fr2/300194044) it should contain line like this
     ```
